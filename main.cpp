@@ -1,10 +1,11 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <functional>
 using namespace std;
 #define LENGTH 4
-#define CORES 2
-
+#define CORES 4
+int Length;
 int char_to_int(char c) {
     if (c >= '0' && c <= '9') {
         return (c-'0');
@@ -54,25 +55,29 @@ void split(string *orig, int left, int right, string *modif) {
     merge(orig, left, (left + right) / 2, right,modif);
 }
 void merge_sort(string *in, int length) {
-    string temp[LENGTH];
+    string temp[length];
     thread threads[CORES];
-    for (int i = 0; i < CORES; i++)
-        threads[i] = thread(&split,in,i*LENGTH/CORES,(i+1)*LENGTH/CORES,temp);
+    for (int i = 0; i < CORES; i++) {
+        int new_left = i * length / CORES;
+        int new_right = (i + 1) * length / CORES;
+        threads[i] = thread(&split, ref(in), ref(new_left), ref(new_right), ref(temp));
+    }
     for (int i = 0; i < CORES; i++)
         threads[i].join();
     for (int i = CORES/2; i > 0; i = i >> 1)
         for (int j = 0; j < i; j++){
-            int left = (j)*LENGTH / i;
-            int right = (j + 1)*LENGTH / i;
+            int left = (j)*length / i;
+            int right = (j + 1)*length / i;
             merge(in, left, (left + right) / 2, right, temp);
         }
 }
 int main(int argc, char *argv[]) {
-
+    int length;
+    cin >> length;
     string array[LENGTH];
     for (int i = 0; i < LENGTH; i++)
         cin >> array[i];
-    merge_sort(array, LENGTH);
+    merge_sort(array, length);
     for (int i = 0; i < LENGTH; i++)
         cout << array[i] << endl;
     return 0;
