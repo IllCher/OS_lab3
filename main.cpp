@@ -1,10 +1,7 @@
 #include <iostream>
 #include <pthread.h>
 #include <string>
-#include <functional>
 using namespace std;
-//#define LENGTH 4
-//#define Cores 4
 int Length;
 int Cores;
 struct arguments {
@@ -68,7 +65,6 @@ void* split(void* param) {
     split((void*)temp_args);
     temp_args->left = tmp_left;
     merge(temp_args->orig, temp_args->left, (temp_args->left + temp_args->right) / 2, temp_args->right, temp_args->mod);
-    //delete(temp_args);
 }
 void merge_sort(string *in) {
     struct arguments* a = new arguments;
