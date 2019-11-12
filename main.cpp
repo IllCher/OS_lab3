@@ -65,14 +65,10 @@ void* split(void* param) {
     int tmp_right = temp_args->right;
     int tmp_left = temp_args->left;
     temp_args->right = (tmp_left + tmp_right) / 2;
-    pthread_mutex_lock(&mutex);
     split((void*)temp_args);
-    pthread_mutex_unlock(&mutex);
     temp_args->right = tmp_right;
     temp_args->left = (tmp_left + tmp_right) / 2;
-    pthread_mutex_lock(&mutex);
     split((void*)temp_args);
-    pthread_mutex_unlock(&mutex);
     temp_args->left = tmp_left;
     merge(temp_args->orig, temp_args->left, (temp_args->left + temp_args->right) / 2, temp_args->right, temp_args->mod);
 }
@@ -89,10 +85,9 @@ void merge_sort(string *in) {
         a->right = new_right;
         pthread_mutex_init(&mutex, NULL);
         pthread_create(&threads[i], NULL, split, (void*)a);
+        pthread_join(threads[i], NULL);
         pthread_mutex_destroy(&mutex);
     }
-    for (int i = 0; i < NumberOfThreads; i++)
-        pthread_join(threads[i], NULL);
     for (int i = NumberOfThreads/2; i > 0; i = i >> 1) //divide by 2
         for (int j = 0; j < i; j++){
             int left = (j)*Length / i;
@@ -107,7 +102,7 @@ int main(int argc, char *argv[]) {
         cin >> array[i];
     NumberOfThreads = atoi(argv[1]);
     if (NumberOfThreads > Length) {
-        NumberOfThreads = Length;
+        NumberOfThreads = 4;
     }
     merge_sort(array);
     cout << "Sorted array:\n";
