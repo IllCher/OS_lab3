@@ -1,6 +1,7 @@
 #include <iostream>
 #include <pthread.h>
 #include <string>
+#include <cmath>
 using namespace std;
 int Length;
 int NumberOfThreads;
@@ -101,9 +102,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < Length; i++)
         cin >> array[i];
     NumberOfThreads = atoi(argv[1]);
-    if (NumberOfThreads > Length) {
-        NumberOfThreads = 4;
+    int power = 0;
+    while (NumberOfThreads > 0) {
+        NumberOfThreads = NumberOfThreads >> 1;
+        power++;
     }
+    //power--;
+
+    NumberOfThreads = (int)pow(2.0, (double)(power));
     merge_sort(array);
     cout << "Sorted array:\n";
     for (int i = 0; i < Length; i++)
