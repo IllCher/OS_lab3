@@ -82,11 +82,9 @@ void merge_sort(string *in) {
         a->left = new_left;
         a->right = new_right;
         pthread_create(&threads[i], NULL, split, (void*)a);
-        pthread_join(threads[i], NULL);
-        //sleep(100);
     }
-    //for (int i = 0; i < Cores; i++)
-      //  pthread_join(threads[i], NULL);
+    for (int i = 0; i < Cores; i++)
+        pthread_join(threads[i], NULL);
     for (int i = Cores/2; i > 0; i = i >> 1)
         for (int j = 0; j < i; j++){
             int left = (j)*Length / i;
