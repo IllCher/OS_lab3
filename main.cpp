@@ -3,7 +3,7 @@
 #include <string>
 using namespace std;
 int Length;
-int Cores;
+int NumberOfThreads;
 pthread_mutex_t mutex;
 struct arguments {
     string* orig;
@@ -15,9 +15,10 @@ int char_to_int(char c) {
     if (c >= '0' && c <= '9') {
         return (c-'0');
     } else {
-        if (c-'W' > 0)
-            return (c-'W');
-        else {
+        c -= 'W';
+        if (c > 0) {
+            return (c);
+        } else {
             return 0;
         }
     }
@@ -63,32 +64,36 @@ void* split(void* param) {
     if (temp_args->right - temp_args->left < 2) return NULL;
     int tmp_right = temp_args->right;
     int tmp_left = temp_args->left;
-    temp_args->right = (temp_args->left + temp_args->right) / 2;
+    temp_args->right = (tmp_left + tmp_right) / 2;
+    pthread_mutex_lock(&mutex);
     split((void*)temp_args);
+    pthread_mutex_unlock(&mutex);
     temp_args->right = tmp_right;
-    temp_args->left = (temp_args->left + temp_args->right) / 2;
+    temp_args->left = (tmp_left + tmp_right) / 2;
+    pthread_mutex_lock(&mutex);
     split((void*)temp_args);
+    pthread_mutex_unlock(&mutex);
     temp_args->left = tmp_left;
     merge(temp_args->orig, temp_args->left, (temp_args->left + temp_args->right) / 2, temp_args->right, temp_args->mod);
 }
 void merge_sort(string *in) {
     struct arguments* a = new arguments;
     string temp[Length];
-    pthread_t threads[Cores];
-    for (int i = 0; i < Cores; i++) {
-        pthread_mutex_init(&mutex, NULL);
-        int new_left = i * Length / Cores;
-        int new_right = (i + 1) * Length / Cores;
+    pthread_t threads[NumberOfThreads];
+    for (int i = 0; i < NumberOfThreads; i++) {
+        int new_left = i * Length / NumberOfThreads;
+        int new_right = (i + 1) * Length / NumberOfThreads;
         a->mod = temp;
         a->orig = in;
         a->left = new_left;
         a->right = new_right;
+        pthread_mutex_init(&mutex, NULL);
         pthread_create(&threads[i], NULL, split, (void*)a);
         pthread_mutex_destroy(&mutex);
     }
-    for (int i = 0; i < Cores; i++)
+    for (int i = 0; i < NumberOfThreads; i++)
         pthread_join(threads[i], NULL);
-    for (int i = Cores/2; i > 0; i = i >> 1) //divide by 2
+    for (int i = NumberOfThreads/2; i > 0; i = i >> 1) //divide by 2
         for (int j = 0; j < i; j++){
             int left = (j)*Length / i;
             int right = (j + 1)*Length / i;
@@ -96,14 +101,13 @@ void merge_sort(string *in) {
         }
 }
 int main(int argc, char *argv[]) {
-
     cin >> Length;
     string array[Length];
     for (int i = 0; i < Length; i++)
         cin >> array[i];
-    Cores = atoi(argv[1]);
-    if (Cores > Length) {
-        Cores = Length / 2;
+    NumberOfThreads = atoi(argv[1]);
+    if (NumberOfThreads > Length) {
+        NumberOfThreads = Length;
     }
     merge_sort(array);
     cout << "Sorted array:\n";
