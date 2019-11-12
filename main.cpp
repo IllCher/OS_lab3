@@ -1,11 +1,18 @@
 #include <iostream>
-#include <thread>
+#include <pthread.h>
 #include <string>
 #include <functional>
 using namespace std;
-#define LENGTH 4
-#define CORES 4
+//#define LENGTH 4
+//#define Cores 4
 int Length;
+int Cores;
+struct arguments {
+    string* orig;
+    int left;
+    int right;
+    string* mod;
+};
 int char_to_int(char c) {
     if (c >= '0' && c <= '9') {
         return (c-'0');
@@ -48,37 +55,54 @@ void merge(string *orig, int left, int mid, int right, string *modif) {
     for (int i = left; i < right; i++)
         orig[i] = modif[i];
 }
-void split(string *orig, int left, int right, string *modif) {
-    if (right - left < 2)return;
-    split(orig, left, (left + right) / 2,modif);
-    split(orig, (left + right) / 2, right,modif);
-    merge(orig, left, (left + right) / 2, right,modif);
+void* split(void* param) {
+    struct arguments* temp_args = new arguments;
+    temp_args = (arguments*)param;
+    if (temp_args->right - temp_args->left < 2) return NULL;
+    int tmp_right = temp_args->right;
+    int tmp_left = temp_args->left;
+    temp_args->right = (temp_args->left + temp_args->right) / 2;
+    split((void*)temp_args);
+    temp_args->right = tmp_right;
+    temp_args->left = (temp_args->left + temp_args->right) / 2;
+    split((void*)temp_args);
+    temp_args->left = tmp_left;
+    merge(temp_args->orig, temp_args->left, (temp_args->left + temp_args->right) / 2, temp_args->right, temp_args->mod);
+    //delete(temp_args);
 }
-void merge_sort(string *in, int length) {
-    string temp[length];
-    thread threads[CORES];
-    for (int i = 0; i < CORES; i++) {
-        int new_left = i * length / CORES;
-        int new_right = (i + 1) * length / CORES;
-        threads[i] = thread(&split, ref(in), ref(new_left), ref(new_right), ref(temp));
+void merge_sort(string *in) {
+    struct arguments* a = new arguments;
+    string temp[Length];
+    pthread_t threads[Cores];
+    for (int i = 0; i < Cores; i++) {
+        int new_left = i * Length / Cores;
+        int new_right = (i + 1) * Length / Cores;
+        a->mod = temp;
+        a->orig = in;
+        a->left = new_left;
+        a->right = new_right;
+        pthread_create(&threads[i], NULL, split, (void*)a);
+        pthread_join(threads[i], NULL);
+        //sleep(100);
     }
-    for (int i = 0; i < CORES; i++)
-        threads[i].join();
-    for (int i = CORES/2; i > 0; i = i >> 1)
+    //for (int i = 0; i < Cores; i++)
+      //  pthread_join(threads[i], NULL);
+    for (int i = Cores/2; i > 0; i = i >> 1)
         for (int j = 0; j < i; j++){
-            int left = (j)*length / i;
-            int right = (j + 1)*length / i;
+            int left = (j)*Length / i;
+            int right = (j + 1)*Length / i;
             merge(in, left, (left + right) / 2, right, temp);
         }
 }
 int main(int argc, char *argv[]) {
-    int length;
-    cin >> length;
-    string array[LENGTH];
-    for (int i = 0; i < LENGTH; i++)
+
+    cin >> Length;
+    string array[Length];
+    for (int i = 0; i < Length; i++)
         cin >> array[i];
-    merge_sort(array, length);
-    for (int i = 0; i < LENGTH; i++)
+    Cores = atoi(argv[1]);
+    merge_sort(array);
+    for (int i = 0; i < Length; i++)
         cout << array[i] << endl;
     return 0;
 }
