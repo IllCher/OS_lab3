@@ -4,6 +4,7 @@
 using namespace std;
 int Length;
 int Cores;
+pthread_mutex_t mutex;
 struct arguments {
     string* orig;
     int left;
@@ -14,26 +15,30 @@ int char_to_int(char c) {
     if (c >= '0' && c <= '9') {
         return (c-'0');
     } else {
-        return (c-'W');
+        if (c-'W' > 0)
+            return (c-'W');
+        else {
+            return 0;
+        }
     }
 }
 
 bool a_lower_or_eq_b(string a, string b) {
     int v1 = 0;
     int v2 = 0;
-    int i = 0;
+    int i = a.size();
     int k = 1;
-    while (a[i] != '\0') {
+    while (i > 0) {
+        i--;
         v1 += char_to_int(a[i])*k;
         k*=10;
-        i++;
     }
-    i = 0;
+    i = b.size();
     k = 1;
-    while (b[i] != '\0') {
+    while (i > 0) {
+        i--;
         v2 += char_to_int(b[i])*k;
         k*=10;
-        i++;
     }
     if (v1 <= v2) {
         return  true;
@@ -71,6 +76,7 @@ void merge_sort(string *in) {
     string temp[Length];
     pthread_t threads[Cores];
     for (int i = 0; i < Cores; i++) {
+        pthread_mutex_init(&mutex, NULL);
         int new_left = i * Length / Cores;
         int new_right = (i + 1) * Length / Cores;
         a->mod = temp;
@@ -78,10 +84,11 @@ void merge_sort(string *in) {
         a->left = new_left;
         a->right = new_right;
         pthread_create(&threads[i], NULL, split, (void*)a);
+        pthread_mutex_destroy(&mutex);
     }
     for (int i = 0; i < Cores; i++)
         pthread_join(threads[i], NULL);
-    for (int i = Cores/2; i > 0; i = i >> 1)
+    for (int i = Cores/2; i > 0; i = i >> 1) //divide by 2
         for (int j = 0; j < i; j++){
             int left = (j)*Length / i;
             int right = (j + 1)*Length / i;
@@ -95,8 +102,12 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < Length; i++)
         cin >> array[i];
     Cores = atoi(argv[1]);
+    if (Cores > Length) {
+        Cores = Length / 2;
+    }
     merge_sort(array);
+    cout << "Sorted array:\n";
     for (int i = 0; i < Length; i++)
-        cout << array[i] << endl;
+        cout << array[i] << "\n";
     return 0;
 }
